@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import axios from 'axios'
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { clearPendingBasicInfo, hasPendingBasicInfo } from '../utils/auth'
 
 type BasicInfoDto = {
   sex: number | null
@@ -10,6 +12,7 @@ type BasicInfoDto = {
   city: string
 }
 
+const router = useRouter()
 const form = ref<BasicInfoDto>({
   sex: 0,
   birthYear: 2000,
@@ -54,6 +57,11 @@ async function submitBasicInfo() {
     })
 
     message.value = response.data || '资料保存成功'
+
+    if (hasPendingBasicInfo()) {
+      clearPendingBasicInfo()
+      router.push('/login')
+    }
   } catch (requestError) {
     if (axios.isAxiosError<string>(requestError)) {
       error.value = requestError.response?.data || requestError.message || '资料保存失败，请稍后再试'

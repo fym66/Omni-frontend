@@ -6,7 +6,7 @@ import LoginView from '../views/LoginView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import UploadView from '../views/UploadView.vue'
 import WatchView from '../views/WatchView.vue'
-import { isLoggedIn } from '../utils/auth'
+import { hasPendingBasicInfo, isLoggedIn } from '../utils/auth'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -45,6 +45,9 @@ const router = createRouter({
           path: 'basic-info',
           name: 'basic-info',
           component: BasicInfoView,
+          meta: {
+            requiresAuth: false,
+          },
         },
         {
           path: 'profile/:userId',
@@ -58,6 +61,15 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const loggedIn = isLoggedIn()
+  const pendingBasicInfo = hasPendingBasicInfo()
+
+  if (pendingBasicInfo && !loggedIn && to.name !== 'basic-info') {
+    return '/basic-info'
+  }
+
+  if (to.name === 'basic-info' && !loggedIn && !pendingBasicInfo) {
+    return '/login'
+  }
 
   if (to.meta.requiresAuth && !loggedIn) {
     return {

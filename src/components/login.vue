@@ -2,7 +2,7 @@
 import axios from 'axios'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { setAuthToken } from '../utils/auth'
+import { setAuthToken, setPendingBasicInfo } from '../utils/auth'
 
 type AuthMode = 'login' | 'register'
 type AuthStep = 'code' | 'verify'
@@ -85,10 +85,8 @@ async function requestAuth() {
     message.value = responseText
 
     if (mode.value === 'register') {
-      mode.value = 'login'
-      step.value = 'code'
-      code.value = ''
-      message.value = responseText || '注册成功，请登录'
+      setPendingBasicInfo()
+      router.push('/basic-info')
       return
     }
 
