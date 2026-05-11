@@ -1,34 +1,34 @@
 <script setup lang="ts">
 import axios from 'axios'
 import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { setAuthToken } from '../utils/auth'
 
 type AuthMode = 'login' | 'register'
 type AuthStep = 'code' | 'verify'
 
+const router = useRouter()
+const route = useRoute()
 const mode = ref<AuthMode>('login')
 const step = ref<AuthStep>('code')
 
 // 后端请求体字段：String email
 const email = ref('')
 
-// 后端请求体字段：String code；发送验证码阶段为空字符串，校验阶段填写用户输入。
+// 后端请求体字段：String code
 const code = ref('')
 
 const loading = ref(false)
 const message = ref('')
 const error = ref('')
 
-// 后端服务地址。最终请求地址会拼成：
-// http://localhost:18281/auth/login/code
-// http://localhost:18281/auth/login/verify
-// http://localhost:18281/auth/register/code
-// http://localhost:18281/auth/register/verify
+// 后端服务地址，最终会拼接 /auth/login/code 等接口。
 const apiBase = 'http://localhost:18281'
 
 const modeCopy = computed(() => {
   if (mode.value === 'login') {
     return {
-      eyebrow: 'Welcome back',
+      eyebrow: '欢迎回来',
       title: '登录 Omni',
       subtitle: '输入邮箱，我们会发送一次性验证码。',
       primary: step.value === 'code' ? '获取登录验证码' : '完成登录',
@@ -38,7 +38,7 @@ const modeCopy = computed(() => {
   }
 
   return {
-    eyebrow: 'Create account',
+    eyebrow: '创建账号',
     title: '注册 Omni',
     subtitle: '使用邮箱验证码创建你的账号。',
     primary: step.value === 'code' ? '获取注册验证码' : '完成注册',
@@ -60,13 +60,13 @@ async function requestAuth() {
   error.value = ''
 
   try {
-    // Axios POST 请求体，字段名与后端 DTO 保持一致。
+    // 请求体字段名与后端 String email / String code 保持一致。
     const requestBody = {
       email: email.value.trim(),
-      code: step.value === 'verify' ? code.value.trim() : null,
+      code: step.value === 'verify' ? code.value.trim() : '',
     }
 
-    // 后端返回值是 String，所以这里用 responseType: 'text' 按纯文本接收。
+    // 后端返回 String，所以 responseType 使用 text。
     const response = await axios.post<string>(`${apiBase}${endpoint.value}`, requestBody, {
       headers: {
         'Content-Type': 'application/json',
@@ -83,6 +83,8 @@ async function requestAuth() {
     }
 
     message.value = responseText
+    setAuthToken(responseText)
+    router.push(String(route.query.redirect ?? '/'))
   } catch (requestError) {
     if (axios.isAxiosError<string>(requestError)) {
       error.value = requestError.response?.data || requestError.message || '请求失败，请稍后再试'
@@ -117,7 +119,7 @@ function editEmail() {
       <div class="brand-mark">O</div>
       <div class="product-copy">
         <h1>Omni</h1>
-        <span>Think what you want to see</span>
+        <span>想看什么，由你决定</span>
       </div>
     </section>
 
