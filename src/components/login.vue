@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import axios from 'axios'
 import { computed, ref } from 'vue'
 
 type AuthMode = 'login' | 'register'
@@ -6,18 +7,28 @@ type AuthStep = 'code' | 'verify'
 
 const mode = ref<AuthMode>('login')
 const step = ref<AuthStep>('code')
-const account = ref('')
+
+// 后端请求体字段：String email
+const email = ref('')
+
+// 后端请求体字段：String code；发送验证码阶段为空字符串，校验阶段填写用户输入。
 const code = ref('')
+
 const loading = ref(false)
 const message = ref('')
 const error = ref('')
 
-const apiBase = import.meta.env.VITE_API_BASE_URL ?? ''
+// 后端服务地址。最终请求地址会拼成：
+// http://localhost:18281/auth/login/code
+// http://localhost:18281/auth/login/verify
+// http://localhost:18281/auth/register/code
+// http://localhost:18281/auth/register/verify
+const apiBase = 'http://localhost:18281'
 
 const modeCopy = computed(() => {
   if (mode.value === 'login') {
     return {
-      eyebrow: '欢迎回来',
+      eyebrow: 'Welcome back',
       title: '登录 Omni',
       subtitle: '输入邮箱，我们会发送一次性验证码。',
       primary: step.value === 'code' ? '获取登录验证码' : '完成登录',
@@ -27,9 +38,9 @@ const modeCopy = computed(() => {
   }
 
   return {
-    eyebrow: '创建账号',
+    eyebrow: 'Create account',
     title: '注册 Omni',
-    subtitle: '用验证码创建你的账号，过程很短，也很安静。',
+    subtitle: '使用邮箱验证码创建你的账号。',
     primary: step.value === 'code' ? '获取注册验证码' : '完成注册',
     switchText: '已经有账号？',
     switchAction: '去登录',
@@ -38,7 +49,7 @@ const modeCopy = computed(() => {
 
 const endpoint = computed(() => `/auth/${mode.value}/${step.value}`)
 const canSubmit = computed(() => {
-  return account.value.trim().length > 0 && (step.value === 'code' || code.value.trim().length > 0)
+  return email.value.trim().length > 0 && (step.value === 'code' || code.value.trim().length > 0)
 })
 
 async function requestAuth() {
@@ -49,48 +60,39 @@ async function requestAuth() {
   error.value = ''
 
   try {
-    const body =
-      step.value === 'code'
-        ? { account: account.value.trim() }
-        : { account: account.value.trim(), code: code.value.trim() }
+    // Axios POST 请求体，字段名与后端 DTO 保持一致。
+    const requestBody = {
+      email: email.value.trim(),
+      code: step.value === 'verify' ? code.value.trim() : '',
+    }
 
-    const response = await fetch(`${apiBase}${endpoint.value}`, {
-      method: 'POST',
+    // 后端返回值是 String，所以这里用 responseType: 'text' 按纯文本接收。
+    const response = await axios.post<string>(`${apiBase}${endpoint.value}`, requestBody, {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      responseType: 'text',
     })
 
-    const result = await parseResponse(response)
-
-    if (!response.ok) {
-      throw new Error(result?.message || result?.error || '请求失败，请稍后再试')
-    }
+    const responseText = response.data || '请求成功'
 
     if (step.value === 'code') {
       step.value = 'verify'
-      message.value = '验证码已发送，请查看你的邮箱。'
+      message.value = responseText
       return
     }
 
-    message.value = mode.value === 'login' ? '登录成功。' : '注册成功。'
+    message.value = responseText
   } catch (requestError) {
-    error.value = requestError instanceof Error ? requestError.message : '网络异常，请稍后再试'
+    if (axios.isAxiosError<string>(requestError)) {
+      error.value = requestError.response?.data || requestError.message || '请求失败，请稍后再试'
+      return
+    }
+
+    error.value = '网络异常，请稍后再试'
   } finally {
     loading.value = false
   }
-}
-
-async function parseResponse(response: Response) {
-  const contentType = response.headers.get('content-type')
-
-  if (contentType?.includes('application/json')) {
-    return response.json()
-  }
-
-  const text = await response.text()
-  return text ? { message: text } : null
 }
 
 function switchMode() {
@@ -101,7 +103,7 @@ function switchMode() {
   error.value = ''
 }
 
-function editAccount() {
+function editEmail() {
   step.value = 'code'
   code.value = ''
   message.value = ''
@@ -114,7 +116,6 @@ function editAccount() {
     <section class="product-panel" aria-label="Omni">
       <div class="brand-mark">O</div>
       <div class="product-copy">
-        
         <h1>Omni</h1>
         <span>Think what you want to see</span>
       </div>
@@ -132,8 +133,8 @@ function editAccount() {
           <label>
             <span>邮箱</span>
             <input
-              v-model="account"
-              autocomplete="username"
+              v-model="email"
+              autocomplete="email"
               inputmode="email"
               placeholder="you@example.com"
               :disabled="loading || step === 'verify'"
@@ -161,7 +162,7 @@ function editAccount() {
         </form>
 
         <div class="auth-actions">
-          <button v-if="step === 'verify'" type="button" @click="editAccount">修改账号</button>
+          <button v-if="step === 'verify'" type="button" @click="editEmail">修改邮箱</button>
           <button type="button" @click="switchMode">
             {{ modeCopy.switchText }}{{ modeCopy.switchAction }}
           </button>
