@@ -489,7 +489,7 @@ a {
   font-size: 13px;
 }
 
-.sidebar a.router-link-active {
+.sidebar a.router-link-exact-active {
   color: #1d1d1f;
   background: #fff;
   box-shadow: 0 10px 28px rgba(29, 29, 31, 0.08);

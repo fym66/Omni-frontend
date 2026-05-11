@@ -3,7 +3,6 @@ import axios from 'axios'
 import { computed, ref } from 'vue'
 
 type BasicInfoDto = {
-  userId: number | null
   sex: number | null
   birthYear: number | null
   country: string
@@ -12,7 +11,6 @@ type BasicInfoDto = {
 }
 
 const form = ref<BasicInfoDto>({
-  userId: 1,
   sex: 0,
   birthYear: 2000,
   country: '中国',
@@ -30,7 +28,6 @@ const basicInfoUrl = 'http://localhost:18281/auth/basic/info'
 
 const canSubmit = computed(() => {
   return (
-    form.value.userId !== null &&
     form.value.sex !== null &&
     form.value.birthYear !== null &&
     form.value.country.trim().length > 0 &&
@@ -47,8 +44,8 @@ async function submitBasicInfo() {
   error.value = ''
 
   try {
-    // 请求体字段与后端 BasicInfoDto 完全一致：
-    // userId、sex、birthYear、country、province、city。
+    // 资料页不让用户填写 userId，身份应由登录态或后端会话识别。
+    // 请求体字段：sex、birthYear、country、province、city。
     const response = await axios.post<string>(basicInfoUrl, form.value, {
       headers: {
         'Content-Type': 'application/json',
@@ -81,21 +78,14 @@ async function submitBasicInfo() {
 
     <div class="upload-layout">
       <form class="upload-form" @submit.prevent="submitBasicInfo">
-        <div class="form-grid">
-          <label>
-            <span>用户 ID</span>
-            <input v-model.number="form.userId" type="number" min="1" />
-          </label>
-
-          <label>
-            <span>性别</span>
-            <select v-model.number="form.sex">
-              <option :value="0">未知</option>
-              <option :value="1">男</option>
-              <option :value="2">女</option>
-            </select>
-          </label>
-        </div>
+        <label>
+          <span>性别</span>
+          <select v-model.number="form.sex">
+            <option :value="0">未知</option>
+            <option :value="1">男</option>
+            <option :value="2">女</option>
+          </select>
+        </label>
 
         <label>
           <span>出生年份</span>
@@ -132,9 +122,8 @@ async function submitBasicInfo() {
           <span>资料</span>
         </div>
         <h2>BasicInfoDto</h2>
-        <p>提交字段：userId、sex、birthYear、country、province、city。</p>
+        <p>提交字段：sex、birthYear、country、province、city。</p>
         <div class="tag-row">
-          <span>ID {{ form.userId }}</span>
           <span>{{ form.birthYear }} 年</span>
           <span>{{ form.country }}</span>
           <span>{{ form.province || '省份' }}</span>

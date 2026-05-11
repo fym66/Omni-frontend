@@ -83,6 +83,15 @@ async function requestAuth() {
     }
 
     message.value = responseText
+
+    if (mode.value === 'register') {
+      mode.value = 'login'
+      step.value = 'code'
+      code.value = ''
+      message.value = responseText || '注册成功，请登录'
+      return
+    }
+
     setAuthToken(responseText)
     router.push(String(route.query.redirect ?? '/'))
   } catch (requestError) {
@@ -119,7 +128,7 @@ function editEmail() {
       <div class="brand-mark">O</div>
       <div class="product-copy">
         <h1>Omni</h1>
-        <span>想看什么，由你决定</span>
+        <span>Think what you want to see</span>
       </div>
     </section>
 
