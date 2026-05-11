@@ -63,7 +63,7 @@ async function requestAuth() {
     // Axios POST 请求体，字段名与后端 DTO 保持一致。
     const requestBody = {
       email: email.value.trim(),
-      code: step.value === 'verify' ? code.value.trim() : '',
+      code: step.value === 'verify' ? code.value.trim() : null,
     }
 
     // 后端返回值是 String，所以这里用 responseType: 'text' 按纯文本接收。
