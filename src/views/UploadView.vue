@@ -112,7 +112,7 @@ function removeVideo() {
       <p>正在跳转到视频播放页...</p>
     </div>
 
-    <div v-else class="upload-wrapper">
+    <div v-else class="upload-layout">
       <form class="upload-form" @submit.prevent="publishVideo">
         <div class="file-upload-area">
           <label v-if="!videoFile" class="file-upload-label">
@@ -172,25 +172,6 @@ function removeVideo() {
 </template>
 
 <style scoped>
-.upload-view {
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.page-heading {
-  text-align: center;
-}
-
-.upload-wrapper {
-  display: flex;
-  justify-content: center;
-}
-
-.upload-form {
-  width: 100%;
-  max-width: 480px;
-}
-
 .file-upload-area {
   margin-bottom: 1.5rem;
 }
