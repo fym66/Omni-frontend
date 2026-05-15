@@ -7,11 +7,7 @@ const router = useRouter()
 const query = ref('')
 
 const navItems = [
-  { label: '精选', icon: '精', to: '/' },
   { label: '推荐', icon: '荐', to: '/' },
-  { label: '搜索', icon: '搜', to: '/' },
-  { label: '关注', icon: '关', to: '/profile/me' },
-  { label: '朋友', icon: '友', to: '/profile/me' },
   { label: '我的', icon: '我', to: '/profile/me' },
   { label: '上传', icon: '传', to: '/upload' },
   { label: '资料', icon: '资', to: '/basic-info' },

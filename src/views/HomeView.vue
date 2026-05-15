@@ -16,7 +16,6 @@ type CommentItem = {
 type VideoInteraction = {
   liked: boolean
   saved: boolean
-  shared: boolean
   commentsOpen: boolean
   commentDraft: string
   comments: CommentItem[]
@@ -24,6 +23,7 @@ type VideoInteraction = {
 
 const route = useRoute()
 const currentIndex = ref(0)
+const lastWheelAt = ref(0)
 
 const interactions = reactive<Record<string, VideoInteraction>>(
   Object.fromEntries(
@@ -32,7 +32,6 @@ const interactions = reactive<Record<string, VideoInteraction>>(
       {
         liked: false,
         saved: false,
-        shared: false,
         commentsOpen: false,
         commentDraft: '',
         comments: [
@@ -101,16 +100,20 @@ function setCurrentVideo(direction: 1 | -1) {
   currentIndex.value = (currentIndex.value + direction + videoCount) % videoCount
 }
 
+function handleWheel(event: WheelEvent) {
+  const now = Date.now()
+  if (now - lastWheelAt.value < 650 || Math.abs(event.deltaY) < 20) return
+
+  lastWheelAt.value = now
+  setCurrentVideo(event.deltaY > 0 ? 1 : -1)
+}
+
 function toggleLike() {
   currentInteraction.value.liked = !currentInteraction.value.liked
 }
 
 function toggleSave() {
   currentInteraction.value.saved = !currentInteraction.value.saved
-}
-
-function toggleShare() {
-  currentInteraction.value.shared = !currentInteraction.value.shared
 }
 
 function toggleComments() {
@@ -136,19 +139,18 @@ function addComment() {
 </script>
 
 <template>
-  <section class="douyin-page" :class="{ 'comments-mode': currentInteraction.commentsOpen }">
+  <section
+    class="douyin-page"
+    :class="{ 'comments-mode': currentInteraction.commentsOpen }"
+    @wheel.prevent="handleWheel"
+  >
     <div class="douyin-video-shell">
       <div class="douyin-video" :style="{ background: currentVideo.thumbnail }">
         <div class="douyin-video-shade"></div>
 
         <button class="douyin-play" type="button" aria-label="播放当前视频">
-          {{ currentInteraction.commentsOpen ? '▶' : '暂停' }}
+          暂停
         </button>
-
-        <div class="douyin-watermark">
-          <strong>网速</strong>
-          <span>最快一次</span>
-        </div>
 
         <div class="douyin-caption">
           <h1>{{ currentVideo.title }}</h1>
@@ -181,31 +183,12 @@ function addComment() {
             <span>★</span>
             {{ currentInteraction.saved ? '已收藏' : formatCount(159) }}
           </button>
-          <button type="button" :class="{ active: currentInteraction.shared }" @click="toggleShare">
-            <span>↗</span>
-            {{ currentInteraction.shared ? '已分享' : '88' }}
-          </button>
-          <button type="button">
-            <span>♫</span>
-            听抖音
-          </button>
         </aside>
-
-        <div class="douyin-switcher">
-          <button type="button" @click="setCurrentVideo(-1)">上一个</button>
-          <button type="button" @click="setCurrentVideo(1)">下一个</button>
-        </div>
       </div>
 
       <div class="douyin-controls">
         <button type="button">▶</button>
         <span>00:06 / {{ currentVideo.duration }}</span>
-        <button type="button">弹</button>
-        <button type="button">弹幕</button>
-        <form class="bullet-form" @submit.prevent>
-          <input placeholder="发一条友好的弹幕吧" />
-          <button type="submit">发送</button>
-        </form>
         <div class="control-right">
           <span>连播</span>
           <span>清屏</span>
@@ -219,7 +202,12 @@ function addComment() {
       </div>
     </div>
 
-    <aside v-if="currentInteraction.commentsOpen" class="douyin-comment-panel" aria-label="评论区">
+    <aside
+      v-if="currentInteraction.commentsOpen"
+      class="douyin-comment-panel"
+      aria-label="评论区"
+      @wheel.stop
+    >
       <div class="comment-tabs">
         <button type="button">详情</button>
         <button type="button">TA的作品</button>
