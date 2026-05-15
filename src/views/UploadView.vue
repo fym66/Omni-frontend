@@ -6,10 +6,6 @@ import { saveLocalVideo, formatFileSize } from '../utils/videoStorage'
 const router = useRouter()
 
 const title = ref('')
-const description = ref('')
-const category = ref('设计')
-const tags = ref('')
-const visibility = ref<'公开' | '不公开列出' | '私密'>('公开')
 const published = ref(false)
 const uploading = ref(false)
 const uploadProgress = ref(0)
@@ -18,18 +14,7 @@ const videoFile = ref<File | null>(null)
 const videoPreviewUrl = ref('')
 
 const canPublish = computed(() => {
-  return (
-    title.value.trim().length > 0 &&
-    description.value.trim().length > 0 &&
-    videoFile.value !== null
-  )
-})
-
-const tagList = computed(() => {
-  return tags.value
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean)
+  return title.value.trim().length > 0 && videoFile.value !== null
 })
 
 function handleFileSelect(event: Event) {
@@ -74,10 +59,6 @@ async function publishVideo() {
     const newVideo = {
       id: 'local_' + Date.now(),
       title: title.value.trim(),
-      description: description.value.trim(),
-      category: category.value,
-      tags: tagList.value,
-      visibility: visibility.value,
       dataUrl,
       createdAt: new Date().toISOString(),
       fileName: videoFile.value.name,
@@ -168,38 +149,6 @@ function removeVideo() {
           <input v-model="title" placeholder="给视频起一个清楚的标题" />
         </label>
 
-        <label>
-          <span>视频简介</span>
-          <textarea v-model="description" rows="6" placeholder="介绍这个视频的内容" />
-        </label>
-
-        <div class="form-grid">
-          <label>
-            <span>分类</span>
-            <select v-model="category">
-              <option>设计</option>
-              <option>编程</option>
-              <option>产品</option>
-              <option>创作者</option>
-              <option>界面</option>
-            </select>
-          </label>
-
-          <label>
-            <span>可见范围</span>
-            <select v-model="visibility">
-              <option>公开</option>
-              <option>不公开列出</option>
-              <option>私密</option>
-            </select>
-          </label>
-        </div>
-
-        <label>
-          <span>标签</span>
-          <input v-model="tags" placeholder="设计, AI, 推荐系统" />
-        </label>
-
         <div v-if="uploading" class="upload-progress">
           <div class="progress-bar">
             <div
@@ -215,27 +164,9 @@ function removeVideo() {
           type="submit"
           :disabled="!canPublish || uploading"
         >
-          {{ uploading ? '上传中...' : '发布视频' }}
+          {{ uploading ? '上传中...' : '上传视频' }}
         </button>
       </form>
-
-      <aside class="upload-preview">
-        <div class="preview-cover">
-          <span v-if="!videoFile">🎬 选择视频后显示预览</span>
-          <video v-else :src="videoPreviewUrl" class="preview-video" muted></video>
-        </div>
-        <h2>{{ title || '视频标题预览' }}</h2>
-        <p>{{ description || '视频简介会在发布前显示在这里。' }}</p>
-        <div class="tag-row">
-          <span>{{ category }}</span>
-          <span>{{ visibility }}</span>
-          <span v-for="tag in tagList" :key="tag">#{{ tag }}</span>
-        </div>
-        <div v-if="videoFile" class="preview-file-info">
-          <span>📁 {{ videoFile.name }}</span>
-          <span>📏 {{ formatFileSize(videoFile.size) }}</span>
-        </div>
-      </aside>
     </div>
   </section>
 </template>
@@ -352,33 +283,6 @@ function removeVideo() {
   background: linear-gradient(90deg, #3b82f6, #8b5cf6);
   border-radius: 4px;
   transition: width 0.3s ease;
-}
-
-.preview-cover {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  background: #1e293b;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-  color: #94a3b8;
-  overflow: hidden;
-}
-
-.preview-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.preview-file-info {
-  display: flex;
-  gap: 0.75rem;
-  font-size: 0.85rem;
-  color: #94a3b8;
-  margin-top: 0.5rem;
 }
 
 .upload-success {
