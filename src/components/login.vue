@@ -7,22 +7,26 @@ import { setAuthToken } from '../utils/auth'
 type AuthMode = 'login' | 'register'
 type AuthStep = 'code' | 'verify'
 
+type ApiResponse = {
+  code: number
+  msg: string
+  data?: {
+    token?: string
+  }
+}
+
 const router = useRouter()
 const route = useRoute()
 const mode = ref<AuthMode>('login')
 const step = ref<AuthStep>('code')
 
-// 后端请求体字段：String email
 const email = ref('')
-
-// 后端请求体字段：String code
 const code = ref('')
 
 const loading = ref(false)
 const message = ref('')
 const error = ref('')
 
-// 后端服务地址，最终会拼接 /auth/login/code 等接口。
 const apiBase = 'http://localhost:18281'
 
 const modeCopy = computed(() => {
@@ -60,44 +64,48 @@ async function requestAuth() {
   error.value = ''
 
   try {
-    // 请求体字段名与后端 String email / String code 保持一致。
     const requestBody = {
       email: email.value.trim(),
       code: step.value === 'verify' ? code.value.trim() : '',
     }
 
-    // 后端返回 String，所以 responseType 使用 text。
-    const response = await axios.post<string>(`${apiBase}${endpoint.value}`, requestBody, {
+    const response = await axios.post<ApiResponse>(`${apiBase}${endpoint.value}`, requestBody, {
       headers: {
         'Content-Type': 'application/json',
       },
-      responseType: 'text',
     })
 
-    const responseText = response.data || '请求成功'
+    const body = response.data
+    const msg = body?.msg ?? '请求成功'
+    const token = body?.data?.token
 
     if (step.value === 'code') {
       step.value = 'verify'
-      message.value = responseText
+      message.value = msg
       return
     }
 
-    message.value = responseText
+    message.value = msg
 
     if (mode.value === 'register') {
       mode.value = 'login'
       step.value = 'code'
       code.value = ''
-      message.value = responseText || '注册成功，请登录'
-      router.push('/login')
+      message.value = msg || '注册成功，请登录'
       return
     }
 
-    setAuthToken(responseText)
+    if (!token) {
+      error.value = msg || '登录失败，未获取到凭证'
+      return
+    }
+
+    setAuthToken(token)
     router.push(String(route.query.redirect ?? '/'))
   } catch (requestError) {
-    if (axios.isAxiosError<string>(requestError)) {
-      error.value = requestError.response?.data || requestError.message || '请求失败，请稍后再试'
+    if (axios.isAxiosError<ApiResponse>(requestError)) {
+      const errBody = requestError.response?.data
+      error.value = errBody?.msg || requestError.message || '请求失败，请稍后再试'
       return
     }
 
